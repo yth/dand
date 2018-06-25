@@ -1,0 +1,582 @@
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
+```
+
+Red Wine Quality by Yuan Cao
+========================================================
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, packages}
+
+library(ggplot2)
+library(GGally)
+
+```
+
+```{r echo=FALSE, Load_the_Data}
+
+wine = read.csv("wineQualityReds.csv")
+
+```
+
+I will be exploring techniques of data analysis and prediction using the red
+wine quality data used by Cortez et al in their 2009 paper: Modeling wine
+preferences by data mining from physicochemical properties. The article appeared
+on the November issue of Decision Support System.
+
+There has been a number of publications that questioned the reliability of human
+judges when it comes to juding wine quality. It would be interesting to see if 
+human judgements has some basis in chemical properties of wines.
+
+# Univariate Exploration and Plots Section
+
+## Overview of the data
+
+```{r echo=FALSE}
+
+names(wine)
+
+```
+
+The physical and chemical properties of the wine under consideration are as
+follows:
+
+Fixed Acidity - concentration of tartaric acid (g/L)
+Volatile Acidity - concentration of acetic acid (g/L)
+Citric Acid - concentration of citric acid (g/L)
+Residual sugar - concentration of residual sugar (g/L)
+Chlorides - concentration of sodium chloride (g/L)
+Free Sulfur Dioxide - concentration of free sulfure dioxide (mg/L)
+Total Sulfur Dioxide - concentration of total sulfure dioxide (mg/L)
+Sulphates - concentration of potassium sulphate (g/L)
+Alcohol - amount of alcohol in the red win (% per volume)
+Density - density of the red wine (g/ml)
+pH - pH of the red wine
+
+```{r echo=FALSE}
+
+str(wine)
+
+```
+
+X marks the index of the wine data. Quality is the score given by judges, which
+can take on an integer value between 0 and 10. Other variables are continuous.
+
+```{r echo=FALSE}
+
+summary(wine)
+
+```
+
+Not counting X, which is the index, most variables takes on values that are
+reasonable. However, I am concerned that quality score. While it can take on
+values from zero to ten, it only has a range from three to eight.
+
+```{r echo=FALSE}
+
+ggplot(aes(x=quality), data=wine) + geom_bar() +
+  scale_x_continuous(breaks=seq(0, 10, 1)) +
+  ggtitle("Wine Quality by Count in Wine Data")
+
+```
+
+```{r echo=FALSE}
+
+summary(wine$quality)
+
+```
+
+It seems most wine have a quality score of 5 or 6. Any wine scoring above or
+below are uncommon. There are only a few samples of extreme good and extreme
+bad wines. It will be difficult to make a convincing arguement regarding what
+would make a great or horrible red wine.
+
+While quality score can be considered categorical, it will be difficult to
+assess what makes a wine a 5 as opposed to 8 due to the paucity of data in some
+categories. Instead, I will treat quality data as if it was continuous. I hope
+this would allow me to draw a progression from worse to better red wines and
+show how their chemical composition would change as the result. Since I have
+few data point at either extreme, I hope that such a progression would lend
+more credibility to my conclusions.
+
+
+
+## Macro Variables
+
+Before examine the chemicals under consideration. It might be good to get an
+overall sense of what we are trying to analyze by looking at the macroscopic
+characteristics of the data.
+
+### Density
+
+The most common substance in a red wine is water. Under standard conditions, the
+concentration of water is 1 g/ml. Water is considered an especially dense liquid
+because of water molecule's (H2O's) ability to form hydrogen bonds with other
+water molecules. As additional substances are added to water, it generally
+weakens water's potential to form Hydrogen bonds. 
+
+```{r echo=FALSE}
+
+ggplot(aes(x=density), data=wine) + geom_histogram() +
+  xlab("Density (g/ml)") +
+  ggtitle("Density Distribution of Red Wine")
+
+```
+
+As expected, red wine generally seems to be slightly less dense than water. The
+density of red wine seems to be normally distributed.
+
+```{r}
+
+summary(wine$density)
+
+```
+
+### pH
+
+Most of the substances under consideration are acids of some sort. I would
+expect red wines have a lower pH than water. 
+
+```{r echo=FALSE}
+
+ggplot(aes(x=pH), data=wine) + geom_histogram() +
+  ggtitle("pH Distribution of Red Wine")
+```
+
+The pH value of red wine seem to form a normal distribution.
+
+```{r echo=FALSE}
+
+summary(wine$pH)
+
+```
+
+
+### Alcohol
+
+It is perhaps obvious that we drink wine for the alcohol contend of the drink.
+It would be interesting to see if alcohol content for red wine is also normally
+distributed.
+
+```{r echo=FALSE}
+
+ggplot(aes(x=alcohol), data=wine) + geom_histogram() +
+  xlab("Alcohol (% by Volume)") + 
+  ggtitle("Alcohol Distribution of Red Wine")
+```
+
+For the first time, we see a skewed graphed. This might be an indication that
+alcohol plays a role in the quality accessment of the wine.
+
+# Univariate Analysis
+
+In the preliminary exploration, I concentrated on the big picture view. The
+various types of acids in the wine all contribute to lower the pH of the wine.
+Depending on the chemicals involved, they will affect the density of the wine.
+As expected, they mostly have normal distributions.
+
+I am most concerned about the relatively few examples of really good or really
+poor wine. Although the scale of possible wine quality scores allowed for any
+value between 1 and 10. The highest score was 8, and the lowest score was 3.
+There were less than 30 data points (out of 1599 observations) in the extreme
+ends of the quality values. Most data are clumped in the middle. It will be
+hard to justify any prediction regarding characteristics of very good (9s, 10s)
+or very bad (1s, 2s) wine when there are no samples of those types of wine in
+the data set.
+
+In the subsequent exploration and analysis, I hope to see if there might be a
+progression of change in chemical properties of red wine that would explain the
+change in quality accessment. If the trend is strong enough, I hope it would
+lend me credence in drawing conclusions for what makes a great or poor red wine.
+
+# Bivariate Exploration and Plots Section
+
+## Macroscopic Variables and Quality Assessment
+
+Based on univariate exploration, I would expect that the macroscopic variables
+that we explore would contribute little to the quality score, unless there is a
+strong correlation between them and the quality score. 
+
+### Density
+
+```{r echo=FALSE}
+
+ggplot(aes(x=density), data=wine) + geom_histogram() + xlab("Density (g/ml)") +
+  facet_grid(~quality) +
+  ggtitle("Density Distribution of Red Wine Split by Quality")
+
+```
+
+Density seem to be normally distributed. The nice bell shaped curve seemed to
+break down at the higher and lower scores due to lack of samples.
+
+### pH
+
+```{r echo=FALSE}
+
+ggplot(aes(x=pH), data=wine) + geom_histogram() +
+  facet_grid(~quality) +
+  ggtitle("pH Distribution of Red Wine Split by Quality")
+```
+
+Again, pH seems to be normally distributed for wines in each quality group.
+
+### Alcohol
+
+```{r echo=FALSE}
+
+ggplot(aes(x=alcohol), data=wine) + geom_histogram() +
+  xlab("Alcohol (% by Volume)") +
+  facet_grid(~quality) +
+  ggtitle("Alcohol Distribution of Red Wine split by Quality")
+```
+
+If we look at the alcohol content by quality categories, it's hard to see an
+obvious pattern. However, it might make sense after further analysis.
+
+### Macroscopic Variables and Quality Assessment Overview
+
+```{r echo=FALSE}
+
+plotter_macro <- subset(wine, select=c(density, pH, alcohol, quality))
+ggpairs(plotter_macro)
+
+```
+
+As expected, most variables are only very weakly correlated with quality scores.
+However, as we saw from univariate exploration, alcoholic content does seem to
+affect the quality score more than the other variables. It would be worthwhile
+to look into this further in the coming sections.
+
+## Acids
+
+The data looked at a few different acids.
+
+```{r echo=FALSE}
+
+plotter_acids <- 
+  subset(wine, 
+         select=c(fixed.acidity,
+                  volatile.acidity,
+                  citric.acid,
+                  quality))
+ggpairs(plotter_acids)
+
+```
+
+While it would be good to keep citric acid and volatile acidity in mind, it
+seems the various acids only weekly correlate with quality.
+
+## Sulfur
+
+The next category of substances are related to sulfur. It's measured by free
+sulfur dioxide, total sulfur dioxide and sulphates. 
+
+```{r echo=FALSE}
+
+plotter_sulfur <- 
+  subset(wine, 
+         select=c(free.sulfur.dioxide, total.sulfur.dioxide, 
+                  sulphates, quality))
+ggpairs(plotter_sulfur)
+
+```
+
+However, it still seems like there are only weak correlation between sulfur
+measurements and quality score. At this point, it seems likely that quality
+score is related to a combination of many different factors.
+
+## Remaining Variables
+
+Only residual sugar and chlorides remain unexplored. Since residual sugar is
+related to the state of the red wine at the end of the fermentation process, I
+think it would be interesting to look at it along with alcohol content. I expect
+a negative correlation between the two variables.
+
+
+```{r echo=FALSE}
+
+plotter_other <- 
+  subset(wine, select=c(chlorides, residual.sugar, alcohol, quality))
+ggpairs(plotter_other)
+
+```
+
+Although my suspicious that red wine quality is most likely due to a
+combinatorial effect of many different variables is confirmed, it's still a
+shock that it seems residual sugar level is not at all related to alcohol level.
+
+## Best of Bred
+
+It would be interesting to see if alcohol content is related volatile acidity,
+since they seems to be the two factors that has the greatest individual impact
+on a red wine's quality score.
+
+```{r echo=FALSE}
+
+plotter_best <- 
+  subset(wine, select=c(volatile.acidity, alcohol, quality))
+ggpairs(plotter_best)
+
+```
+
+It is interesting that there is only a small negative correlation between the
+two variables. I would have expected them to have a much higher negative
+correlation. This seems to further indicate that quality score is based on a
+more complex interaction between the various factors, or there is no underlying
+physical or chemical foundation for judges' assessment of red wines.
+
+# Bivariate Analysis
+
+```{r echo=FALSE}
+
+ggplot(aes(x=alcohol, y=volatile.acidity, color=factor(quality)), data=wine) +
+  geom_point() + scale_color_brewer(palette="RdYlGn") + theme_dark() +
+  xlab("Alcohol (% by Volume)") + ylab("Volatile Acidity (acetic acid, g/L)") +
+  ggtitle("Relationship between Alcohol Level and Volatile Acidity")
+
+```
+
+Two factors stands out among the different types of data collected. Alcohol
+content seems to have the biggest positive correlation with the quality score
+of the red wine in the study. Volatile acidity seems to have the biggest
+negative correlation with the quality score. The other factors seems to play
+marginal roles.
+
+It seems reasonable that people would prefer to have a stronger drink - after
+all, if it's not alcohol we are after when we drink wine, we might as well drink
+grape juice. It does seem surprising that there seems to be one major mistakes
+one needs to avoid to make good red wine - having too much volatile acidity.
+
+# Multivariate Exploration and Plots Section
+
+I would like to explore the relationship between the various acids and the
+quality score of a red wine.
+
+## Volatile Acidity
+
+Since having a high volatile acidity seems to be the main factor that would
+drag down a wine's quality score, it would be interesting to see how it relates
+with other factors. In particular, I am interested to explore its connection
+with other acids and the pH level of the wine.
+
+```{r echo=FALSE}
+
+wine$minus_pH <- wine$pH * -1
+
+plotter_acids_ph <- 
+  subset(wine,
+         select=c(fixed.acidity, volatile.acidity,
+                  citric.acid, minus_pH, quality))
+ggpairs(plotter_acids_ph)
+
+```
+
+To make the analysis simpler, I created the minus_pH variable. It's simply pH
+value multiplied by negative one. This transformation results in higher
+minus_pH value (closer to zero) being more acidic. A higher concentration of
+acids results in higher minus_pH value.
+
+It seems strange that while fixed acidity and citric acid concentration both
+positively correlated with minus_pH, there is a slight negative correlation
+between minus_pH and volatile acidity.
+
+It seems to imply that at higher acidity levels, there tends to be less volatile
+acidity. Since volatile acidity is negatively correlated with quality scores, it
+would imply that more acidic wine should be favored. However, minus_pH (pH) does
+not seem to be correlated with a red wine's quality score.
+
+This seems to point to the possibility that it's the ratio of acids that
+determine the wine quality.
+
+```{r echo=FALSE}
+
+wine$total.acid <- wine$fixed.acidity + wine$volatile.acidity + wine$citric.acid
+wine$fixed.acidity.ratio <- wine$fixed.acidity / wine$total.acid
+wine$volatile.acidity.ratio <- wine$volatile.acidity / wine$total.acid
+wine$citric.acid.ratio <- wine$citric.acid / wine$total.acid
+
+plotter_acid_ratio <- subset(wine, 
+                             select=c(fixed.acidity.ratio,
+                                      volatile.acidity.ratio,
+                                      citric.acid.ratio,
+                                      quality))
+
+ggpairs(plotter_acid_ratio)
+
+```
+
+```{r echo=FALSE}
+
+wine$fixed.volatile.ratio <- wine$fixed.acidity / wine$volatile.acidity
+wine$citric.fixed.ratio <- wine$citric.acid / wine$fixed.acidity
+wine$citric.volatile.ratio <- wine$citric.acid / wine$volatile.acidity
+wine$nonvol.volatile.ratio <- 
+  (wine$citric.acid + wine$fixed.acidity) / wine$volatile.acidity
+
+plotter_acid_pair <- subset(wine, select=c(fixed.volatile.ratio, 
+                                           citric.fixed.ratio,
+                                           citric.volatile.ratio,
+                                           nonvol.volatile.ratio,
+                                           quality))
+
+ggpairs(plotter_acid_pair)
+
+```
+
+The best feature that I could come up with seems to the the ratio of
+non-volatile acidity (fixed + citric acids) to volatile acidity. Interestingly,
+it has a correlation with fixed to volatile acidity ratio of 1. Although fixed
+to non-volatile acidity ratio has a slightly lower correlation with quality
+score, it's small enough that it does not out weigh the benefit of having a
+simpler model.
+
+```{r echo=FALSE}
+
+ggplot(aes(x=volatile.acidity, y=quality, color=fixed.volatile.ratio),
+       data=wine) + geom_point() + geom_jitter() +
+  xlab("Volatile Acidity (acetic acid, g/l)") + ylab("Quality") + 
+  ggtitle("Beyond Volatile Acidity (Fixed to Volatile Acidity Ratio)") +
+  scale_color_continuous(low="brown", high="yellow",
+                         name="Fix-Volatile Acid Ratio")
+
+```
+
+Citric acid concentration could perhaps be better used as another layer on a
+potential model for assessing whether human judge's scoring might have a
+underlying basis in chemistry. However, it does not seem as important as the
+fixed to volatile acidity ratio.
+
+```{r echo=FALSE}
+
+ggplot(aes(x=volatile.acidity, y=quality, color=citric.acid.ratio), data=wine) +
+  geom_point() +
+  geom_jitter() +
+  xlab("Volatile Acidity (acetic acid, g/l)") + ylab("Quality") +   
+  ggtitle("Beyond Volatile Acidity (Citric Acid Level to Volatile Acidity Ratio)") +
+  scale_color_continuous(low="brown", high="yellow", name="Citric Acid Ratio")
+
+```
+
+
+# Multivariate Analysis
+
+I found two factors that most affect the quality scoring of a red wine: alcohol
+level and volatile acidity. I felt it was clear why alcohol level would play a
+role in determining a red wine's quality score. So, I focused my analysis on the
+nature of the acidity found in red wines and how it impact quality scoring of
+red wines.
+
+Beyond a preference against volatile acidity, judges seem to favor a higher
+ratio of non-volatile to volatile acidity ratio. Citric acid concentration did
+not seem to have as large an affect as I originally thought. I believe if I were
+to build a model to predict quality score based on the chemical and physical
+properties of a red wine, fixed to volatile acidity ratio would serve as a
+better variable.
+
+### Modeling of Red Wine
+
+```{r}
+
+library(lattice)
+library(MASS)
+library(memisc)
+
+m1 <- lm(quality ~ alcohol, data=wine)
+m2 <- update(m1, ~ . + volatile.acidity)
+mtable(m1, m2)
+
+```
+
+While grading red wines are complicated, it's interesting to see what a not
+insignificant part of the process can be attributed to two variables. By
+including more variables, it's possible to increase the predictive power of the
+model. However, I believe the model will be less robust. There are only a few
+samples of really good and really bad wines. A complex model is more likely to
+overfit on those few samples, and obscure the underlying causes for what makes
+a red wine good.
+
+The main focus of this series of analysis is to assess if judges' quality score
+assessment has a basis in the underlying physical or chemical properties
+of a red wine. I believe this indicates that there is such a basis, but it is
+not a major contributing factor to red wine quality scores.
+
+------
+
+# Final Plots and Summary
+
+After our analysis, it might be interesting to shift focus toward something more
+lighthearted. At the end of the day, all we want is to be able to pick good red
+wines for ourselves. Although red wine scoring is a complicated process, there
+are a couple of major themes that would allow someone to pick up a reasonable
+bottle with relatively few pieces of information.
+
+### Plot One
+```{r echo=FALSE, Plot_One}
+ggpairs(plotter_best)
+```
+
+### Description One
+
+There are two most important single factors that seem to affect human judges.
+One is the alcohol level in a red wine. The other is the volatile acidity in a
+red wine.
+
+In practical terms, if you know nothing about two bottles of red wine, you could
+do worse than pick the one with a higher alcoholic content. If you could only
+know one more piece of information about the red wine, find out its volatile
+acidity.
+
+### Plot Two
+```{r echo=FALSE, Plot_Two}
+
+ggplot(aes(x=alcohol, y=volatile.acidity, color=factor(quality)), data=wine) +
+  geom_point() + scale_color_brewer(palette="RdYlGn") + theme_dark() +
+  xlab("Alcohol (% by Volume)") + ylab("Volatile Acidity (acetic acid, g/L)") +
+  ggtitle("Relationship between Alcohol Level and Volatile Acidity")
+
+```
+
+### Description Two
+
+Luckily, it seems like red wine that has higher alcoholic content seems to have
+a lower volatile acidity. This is a weak effect, but simply looking at the
+alcohol content can tell you quite a lot.
+
+### Plot Three
+```{r echo=FALSE, Plot_Three}
+
+ggplot(aes(x=volatile.acidity, y=quality, color=fixed.volatile.ratio),
+       data=wine) + geom_point() + geom_jitter() +
+  xlab("Volatile Acidity (acetic acid, g/l)") + ylab("Quality") + 
+  ggtitle("Beyond Volatile Acidity (Fixed to Volatile Acidity Ratio)") +
+  scale_color_continuous(low="brown", high="yellow",
+                         name="Fix-Volatile Acid Ratio")
+
+```
+
+### Description Three
+
+If you have the complete data of a set of red wines, but not enough time to do
+an indepth analysis, look at the fixed to volatile acid ratio, after you have
+find out the wine's alcohol level and volatile acidity.
+
+------
+
+# Reflection
+
+None of the factors seems be a silver bullet for predicting red wine quality
+scores. It might be due to individual natures of people's tastes. As other
+publications have already pointed it out, it might also be due to the
+inconsistency of the judges, which too, is a human failing. In addition, there
+are few samples that has a high or low quality score. This limits how robust any
+model can be.
+
+I believe there are two factors that stands out: alcohol level and volatile
+acidity. They seems to be the factors that has the greatest effect on the
+quality score of a red wine.
+
+With the paucity of data points on each end of quality score, I think another
+interesting way to analyze the data might be to eliminate the middle data points
+and only look at the extreme data points. It might be interesting to see if
+that might make some trends in the data more obvious. Then, we can try to see
+if the trend holds when we test it using all of the data.
